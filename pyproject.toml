@@ -38,12 +38,21 @@ dependencies = [
     # Models & validation
     "pydantic>=2.11.0",
     "requests>=2.32.0",
+    # YAML parsing (RXP domain profiles)
+    "pyyaml>=6.0",
     # IPI document generators
     "reportlab>=4.4.0",
     "pypdf>=6.7.4",
     "piexif>=1.1.3",
     "python-docx>=1.2.0",
     "icalendar>=6.0.0",
+]
+
+[project.optional-dependencies]
+rxp = [
+    "sentence-transformers>=5.2,<6",
+    "chromadb>=1.5,<2",
+    "numpy>=1.26",
 ]
 
 [dependency-groups]
@@ -54,6 +63,7 @@ dev = [
     "ruff>=0.9.0",
     "pre-commit>=4.3.0",
     "mypy>=1.15.0",
+    "types-PyYAML>=6.0",
 ]
 
 [project.scripts]

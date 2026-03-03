@@ -16,4 +16,4 @@ app = typer.Typer(
 
 app.add_typer(ipi_app, name="ipi", help="Indirect prompt injection via document ingestion")
 app.add_typer(cxp_app, name="cxp", help="Coding assistant context file poisoning")
-app.add_typer(rxp_app, name="rxp", help="RAG retrieval poisoning optimizer [planned]")
+app.add_typer(rxp_app, name="rxp", help="RAG retrieval poisoning optimizer")
