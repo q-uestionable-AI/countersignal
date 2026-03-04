@@ -2,6 +2,93 @@
 title: Quickstart
 description: Install CounterSignal and run your first indirect prompt injection test
 ---
+
 # Quickstart
-{/* Content to be written — install, generate payloads, start listener, deploy to target, view results */}
-<Info>This page is coming soon.</Info>
+
+## Install
+
+```bash
+pip install countersignal
+```
+
+Or from source:
+
+```bash
+git clone https://github.com/q-uestionable-AI/countersignal.git
+cd countersignal
+uv sync --group dev
+```
+
+## IPI — Indirect Prompt Injection
+
+Generate a payload, start the callback listener, then deploy the document to your target.
+
+**1. Start the callback listener**
+
+```bash
+countersignal ipi listen --port 8080
+```
+
+This starts an HTTP server that receives and logs execution callbacks. Leave it running.
+
+**2. Generate payloads**
+
+```bash
+countersignal ipi generate --callback http://10.0.40.41:8080 --technique all --format markdown
+```
+
+Generates documents using all 34 hiding techniques in Markdown format with your listener URL baked in.
+
+**3. Deploy to your target**
+
+Upload a generated document to your target system (RAG pipeline, knowledge base, document assistant). When the agent ingests and acts on the payload, the callback fires.
+
+**4. Check callback status**
+
+```bash
+countersignal ipi status
+```
+
+Shows which payloads have fired and which are pending.
+
+---
+
+## CXP — Context File Poisoning
+
+Generate a poisoned instruction file and place it in a project directory.
+
+```bash
+# Generate a backdoor payload in CLAUDE.md format
+countersignal cxp generate --objective backdoor --format claude-md
+
+# View a matrix of all techniques
+countersignal cxp report matrix --format markdown
+```
+
+Place the generated file in a project directory and observe whether your coding assistant follows the injected instructions.
+
+---
+
+## RXP — RAG Retrieval Poisoning
+
+Validate whether an adversarial document achieves retrieval rank in a vector search.
+
+```bash
+# List available embedding models
+countersignal rxp list-models
+
+# Validate retrieval against the HR policy domain profile
+countersignal rxp validate --profile hr-policy --model minilm-l6
+```
+
+---
+
+## Next Steps
+
+- **IPI** — see the IPI module docs for technique categories, format details, and callback authentication
+- **CXP** — see the CXP module docs for objective and format combinations
+- **RXP** — see the RXP module docs for domain profiles and multi-model comparison
+
+<Warning>
+Only test systems you own, control, or have explicit permission to test.
+</Warning>
