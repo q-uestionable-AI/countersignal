@@ -129,7 +129,7 @@ def generate_payload(
     canary_uuid: str,
     style: PayloadStyle = PayloadStyle.OBVIOUS,
     payload_type: PayloadType = PayloadType.CALLBACK,
-    token: str = "",  # nosec: B107
+    token: str | None = None,
 ) -> str:
     """Generate the injection payload string using the specified style and type.
 
@@ -148,7 +148,7 @@ def generate_payload(
         canary_uuid: Unique identifier for this payload instance.
         style: Social engineering style for the payload content.
         payload_type: Attack objective type.
-        token: Per-campaign authentication token. When provided, the callback
+        token: Optional per-campaign authentication token. When provided, the callback
             URL becomes /c/{uuid}/{token} instead of /c/{uuid}.
 
     Returns:

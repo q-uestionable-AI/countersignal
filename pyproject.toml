@@ -101,7 +101,6 @@ max-complexity = 15
 "tests/*" = ["S"]
 
 [tool.bandit]
-skips = ["B101", "B311"]
 
 [tool.mypy]
 python_version = "3.11"
