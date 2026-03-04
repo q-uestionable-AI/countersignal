@@ -1,4 +1,7 @@
 # CounterSignal
+
+[![CI](https://github.com/q-uestionable-AI/countersignal/actions/workflows/ci.yml/badge.svg)](https://github.com/q-uestionable-AI/countersignal/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/q-uestionable-AI/countersignal/actions/workflows/codeql.yml/badge.svg)](https://github.com/q-uestionable-AI/countersignal/actions/workflows/codeql.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white)](https://github.com/pre-commit/pre-commit)
@@ -10,15 +13,9 @@ CounterSignal consolidates three content-layer security testing tools into a sin
 
 > Research program by [Richard Spicer](https://richardspicer.io) · [GitHub](https://github.com/richardspicer)
 
-## Modules
+---
 
-**IPI — Indirect Prompt Injection:** Generate documents with hidden payloads — 34 hiding techniques across 7 formats (PDF, Image, Markdown, HTML, DOCX, ICS, EML) — and track execution via authenticated callbacks.
-
-**CXP — Context File Poisoning:** Test whether poisoned project-level instruction files cause AI coding assistants to produce vulnerable code, exfiltrate data, or execute commands. 5 attack objectives across 6 assistant formats (30 techniques).
-
-**RXP — RAG Retrieval Poisoning:** Validate whether adversarial documents achieve retrieval rank in RAG pipeline vector similarity searches. Embedding model registry (3 models), retrieval validation engine, domain profiles, and multi-model comparison. Optional dependencies via `countersignal[rxp]`.
-
-## Quick Start
+## Install
 
 ```bash
 pip install countersignal
@@ -32,7 +29,17 @@ cd countersignal
 uv sync --group dev
 ```
 
-## Usage Examples
+---
+
+## Modules
+
+**IPI — Indirect Prompt Injection:** Generate documents with hidden payloads — 34 hiding techniques across 7 formats (PDF, Image, Markdown, HTML, DOCX, ICS, EML) — and track execution via authenticated callbacks.
+
+**CXP — Context File Poisoning:** Test whether poisoned project-level instruction files cause AI coding assistants to produce vulnerable code, exfiltrate data, or execute commands. 5 attack objectives across 6 assistant formats (30 techniques).
+
+**RXP — RAG Retrieval Poisoning:** Validate whether adversarial documents achieve retrieval rank in RAG pipeline vector similarity searches. Embedding model registry (3 models), retrieval validation engine, domain profiles, and multi-model comparison. Optional dependencies via `countersignal[rxp]`.
+
+## Usage
 
 ```bash
 # IPI — Generate payloads and track execution
@@ -48,6 +55,10 @@ countersignal cxp report matrix --format markdown
 countersignal rxp list-models
 countersignal rxp validate --profile hr-policy --model minilm-l6
 ```
+
+Full documentation at [docs.countersignal.dev](https://docs.countersignal.dev).
+
+---
 
 ## Sister Project
 
@@ -65,10 +76,10 @@ countersignal rxp validate --profile hr-policy --model minilm-l6
 
 All tools are intended for authorized security testing only. Only test systems you own, control, or have explicit permission to test. Responsible disclosure for all vulnerabilities discovered.
 
-## AI Disclosure
-
-This project uses a human-led, AI-augmented workflow. See [AI-STATEMENT.md](AI-STATEMENT.md).
-
 ## License
 
 [MIT](LICENSE)
+
+## AI Disclosure
+
+This project uses a human-led, AI-augmented workflow. See [AI-STATEMENT.md](AI-STATEMENT.md).
