@@ -3,8 +3,6 @@ title: "RXP: RAG Retrieval Poisoning"
 description: Embedding model validation and poison document retrieval testing for RAG pipelines
 ---
 
-# RXP: RAG Retrieval Poisoning
-
 RXP tests whether adversarial documents can win vector similarity battles in RAG (Retrieval-Augmented Generation) systems. If a poisoned document ranks high enough to enter the LLM context window, the attacker controls part of the generation context — enabling indirect prompt injection at the retrieval layer.
 
 ## Why Embedding Model Choice Matters
