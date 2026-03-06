@@ -109,12 +109,18 @@ class ValidationResult:
         Returns:
             Prompt string ready for embedding in JSON output.
         """
-        rate_pct = f"{self.retrieval_rate:.0%}"
+        if self.total_queries == 0:
+            rate_str = "N/A retrieval rate (0 queries)"
+        else:
+            rate_pct = f"{self.retrieval_rate:.0%}"
+            rate_str = (
+                f"{rate_pct} retrieval rate "
+                f"({self.poison_retrievals}/{self.total_queries} queries)"
+            )
         rank_str = f"{self.mean_poison_rank:.1f}" if self.mean_poison_rank is not None else "N/A"
         return (
             f"Retrieval poisoning validation against {self.model_id}: "
-            f"{rate_pct} retrieval rate "
-            f"({self.poison_retrievals}/{self.total_queries} queries), "
+            f"{rate_str}, "
             f"mean poison rank {rank_str}. "
             "Assess poisoning confidence and recommend document and "
             "query optimization to improve retrieval rank."
