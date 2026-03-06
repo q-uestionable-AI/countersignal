@@ -16,8 +16,22 @@ def _parse_version(v: str) -> tuple[int, ...]:
     Returns:
         Tuple of integers (e.g. (0, 1, 0)).
     """
+    import re
+
+    match = re.match(
+        r"^(?P<core>\d+(?:\.\d+)*)(?:(?:[-_.]?)(?P<pre>a|b|rc)(?P<pre_n>\d*)?)?",
+        v,
+        re.IGNORECASE,
+    )
+    if not match:
+        return (0,)
     try:
-        return tuple(int(x) for x in v.split("."))
+        core = tuple(int(x) for x in match.group("core").split("."))
+        pre = match.group("pre")
+        if pre:
+            rank = {"a": -3, "b": -2, "rc": -1}[pre.lower()]
+            return (*core, rank, int(match.group("pre_n") or 0))
+        return (*core, 0, 0)
     except ValueError:
         return (0,)
 
