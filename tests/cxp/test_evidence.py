@@ -167,6 +167,30 @@ class TestResultCrud:
         assert fetched.captured_files == files
 
 
+class TestGetCampaignResultCounts:
+    def test_get_campaign_result_counts(self) -> None:
+        conn = sqlite3.connect(":memory:")
+        init_db(conn)
+
+        camp1 = create_campaign(conn, "Campaign 1")
+        camp2 = create_campaign(conn, "Campaign 2")
+        camp3 = create_campaign(conn, "Campaign 3")
+
+        record_result(conn, camp1.id, "t1", "ast1", "trig1", "raw1", "output")
+        record_result(conn, camp1.id, "t2", "ast1", "trig2", "raw2", "output")
+
+        record_result(conn, camp2.id, "t3", "ast2", "trig3", "raw3", "output")
+
+        from countersignal.cxp.evidence import get_campaign_result_counts
+
+        counts = get_campaign_result_counts(conn)
+
+        assert counts.get(camp1.id) == 2
+        assert counts.get(camp2.id) == 1
+        assert counts.get(camp3.id) is None
+        assert counts.get("nonexistent") is None
+
+
 class TestUpdateValidation:
     def test_update_validation(self) -> None:
         conn = sqlite3.connect(":memory:")

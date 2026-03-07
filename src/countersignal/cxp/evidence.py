@@ -223,6 +223,19 @@ def record_result(
     )
 
 
+def get_campaign_result_counts(conn: sqlite3.Connection) -> dict[str, int]:
+    """Get the number of results for all campaigns.
+
+    Args:
+        conn: An open SQLite connection.
+
+    Returns:
+        Dictionary mapping campaign ID to result count.
+    """
+    cursor = conn.execute("SELECT campaign_id, COUNT(*) FROM test_results GROUP BY campaign_id")
+    return {row[0]: row[1] for row in cursor.fetchall()}
+
+
 def list_results(conn: sqlite3.Connection, campaign_id: str | None = None) -> list[TestResult]:
     """List results, optionally filtered by campaign.
 

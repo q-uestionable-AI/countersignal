@@ -11,6 +11,7 @@ import typer
 from countersignal.cxp.evidence import (
     create_campaign,
     get_campaign,
+    get_campaign_result_counts,
     get_db,
     get_result,
     list_campaigns,
@@ -173,10 +174,14 @@ def campaigns(
             typer.echo("No campaigns found.")
             conn.close()
             return
+
+        # Optimization: Get all result counts in one query (avoid N+1)
+        result_counts = get_campaign_result_counts(conn)
+
         typer.echo(f"{'ID':<38} {'Name':<30} {'Created':<22} Results")
         typer.echo("-" * 95)
         for c in camps:
-            count = len(list_results(conn, c.id))
+            count = result_counts.get(c.id, 0)
             created_str = c.created.strftime("%Y-%m-%d %H:%M")
             typer.echo(f"{c.id:<38} {c.name:<30} {created_str:<22} {count}")
     else:
