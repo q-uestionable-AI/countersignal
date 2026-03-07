@@ -60,6 +60,7 @@ dev = [
     "pytest>=8.3.0",
     "pytest-cov>=6.0.0",
     "pytest-timeout>=2.4",
+    "pytest-asyncio>=1.3.0",
     "ruff>=0.15",
     "pre-commit>=4.3.0",
     "mypy>=1.19",
@@ -83,6 +84,7 @@ packages = ["src/countersignal"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 timeout = 60
+asyncio_mode = "auto"
 
 [tool.ruff]
 line-length = 100
