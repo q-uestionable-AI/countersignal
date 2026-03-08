@@ -36,7 +36,7 @@ Open the generated repo as a **standalone project** in your IDE. Do not open it 
 
 Generated repos contain no security research language by default (clean mode). This prevents coding assistants from detecting the test and refusing the poisoned instructions.
 
-- **Clean mode** (default): No `TRIGGER.md`, no security warnings in `README.md`, no references to CounterSignal or CXP in any file. Use this for testing.
+- **Clean mode** (default): No `TRIGGER.md`, no security warnings in `README.md`, and no references to CounterSignal or CXP in normal project files (only the poisoned instruction file may contain them). Use this for testing.
 - **Research mode** (`--research`): Includes `TRIGGER.md` with testing instructions and a security-warning `README.md`. Use this for documentation or sharing.
 
 ### Manifest
