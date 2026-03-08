@@ -43,3 +43,6 @@ scripts/preflight.py
 # Claude Code
 .claude/
 CLAUDE.md
+
+# Codex
+AGENTS.md
