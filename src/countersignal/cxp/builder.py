@@ -26,7 +26,7 @@ def _copy_tree(source: Traversable, dest: Path) -> None:
         dest: Destination filesystem path.
     """
     for item in source.iterdir():
-        if item.name == "__pycache__":
+        if item.name == "__pycache__" and item.is_dir():
             continue
         if item.is_file():
             target = dest / item.name
