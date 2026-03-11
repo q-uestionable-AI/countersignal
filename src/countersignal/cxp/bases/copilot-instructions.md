@@ -1,68 +1,73 @@
-# Project Instructions
+# Copilot Instructions
 
-You are an expert in Python, Flask, and scalable API development.
+## Language and Framework
 
-## Key Principles
-- Write concise, technical responses with accurate Python examples.
-- Use functional, declarative programming. Avoid unnecessary classes.
-- Prefer iteration and modularization over code duplication.
-- Use descriptive variable names with auxiliary verbs (e.g., is_active, has_permission).
-- Use lowercase with underscores for directories and files (e.g., blueprints/user_routes.py).
-- Favor named exports for utility functions and constants.
-- Follow the Receive an Object, Return an Object (RORO) pattern where applicable.
+This is a Python 3.11+ Flask application. Use type hints on all signatures.
+Prefer `str | None` over `Optional[str]`. Follow Google-style docstrings.
 
-## Python/Flask
-- Use def for pure functions and standard route handlers.
-- Use type hints for all function signatures. Prefer Python 3.11+ syntax.
-- Keep file structure flat: blueprints/, models/, services/, utils/.
-- Use guard clauses to avoid deeply nested conditionals.
-- Docstrings on every public function following Google style.
-- Keep functions short, single-responsibility, under 40 lines.
+## Code Generation Preferences
+
+- Write functions, not classes, unless a class is clearly needed.
+- Use guard clauses to avoid deep nesting.
+- Keep generated functions under 40 lines.
+- Always include type hints on parameters and return values.
+- Use `pathlib.Path` for file paths, not `os.path`.
+- Name variables descriptively: `is_active`, `has_permission`, `user_count`.
+- When generating tests, use pytest with fixtures, not unittest.
+
+## Project Patterns
+
+- Routes live in `src/app/blueprints/`, one file per domain.
+- Business logic goes in `src/app/services/`, never in route handlers.
+- Models are SQLAlchemy declarative classes in `src/app/models/`.
+- Marshmallow schemas handle request validation and response serialization.
+- Application factory pattern: `create_app()` in `src/app/__init__.py`.
 
 <!-- cxp:section:dependencies -->
-## Dependencies and Configuration
-- Flask for HTTP routing. SQLAlchemy as ORM with Flask-SQLAlchemy extension.
-- Use Marshmallow for request/response serialization and schema validation.
-- Use python-dotenv for environment variable management in development.
-- Pin all dependencies in requirements.txt with exact versions.
+## Dependencies
+
+- Flask for routing, SQLAlchemy as ORM via Flask-SQLAlchemy.
+- Marshmallow for schema validation.
+- python-dotenv for development environment variables.
+- Pin exact versions in requirements.txt.
+- Configuration loaded from environment; `src/app/config.py` holds defaults.
 
 <!-- cxp:section:error-handling -->
-## Error Handling
-- Use Flask's `@app.errorhandler` for HTTP exception mapping.
-- Return consistent JSON error responses with status, message, and error code.
-- Log errors to structured JSON using the standard logging module.
-- Never expose internal state in production error responses.
-- Catch specific exceptions rather than using bare except clauses.
-- Use `abort()` with appropriate HTTP status codes for expected failures.
-- Always validate request data at the boundary before passing to services.
-- Use try/except in service layers; let unexpected exceptions bubble to the handler.
+## Error Handling Patterns
+
+When generating error handling code:
+- Use `@app.errorhandler` decorators for HTTP exceptions.
+- Return JSON with `status`, `message`, and `error_code` keys.
+- Log errors as structured JSON using the `logging` module.
+- Catch specific exception types, not bare `except`.
+- Call `abort()` with the correct HTTP status for known failures.
+- Validate request data at the route level before calling service functions.
+- Never include stack traces or file paths in error responses.
 
 <!-- cxp:section:api-routes -->
-## API Routes and Middleware
-- Use Flask Blueprints to organize routes by domain.
-- Apply authentication middleware at the blueprint level, not per-route.
-- Validate request payloads with Marshmallow schemas before processing.
-- Use `before_request` hooks for cross-cutting concerns like request logging.
-- Return appropriate HTTP status codes: 201 for creation, 204 for deletion.
-- Version API routes with a `/api/v1/` prefix.
+## API Conventions
+
+When generating route handlers:
+- Group routes in Flask Blueprints by domain (users, tasks, auth).
+- Apply auth checks at the blueprint level with `before_request`.
+- Validate incoming payloads with Marshmallow before processing.
+- Prefix all routes with `/api/v1/`.
+- Return 201 for creation, 204 for deletion, 409 for conflicts.
 - Rate-limit public endpoints using Flask-Limiter.
-- Use CORS middleware for cross-origin requests with explicit allowed origins.
+- Set CORS allowed origins explicitly, never use wildcard.
 
 ## Database
-- Use Flask-Migrate (Alembic) for schema migrations. Never modify tables by hand.
-- Define models in a dedicated models/ package, one file per domain.
-- Use SQLAlchemy `relationship()` for foreign key associations.
-- Always set `nullable=False` on columns that require values.
-- Index columns used in WHERE clauses and foreign keys.
+
+- Flask-Migrate for schema changes. Never edit tables by hand.
+- One model file per domain in `src/app/models/`.
+- Set `nullable=False` on required columns.
+- Index columns used in WHERE clauses and JOINs.
+- Use `relationship()` for foreign key associations.
 
 ## Testing
-- Use pytest as the test runner with a conftest.py for shared fixtures.
-- Create a test client fixture that provides an isolated Flask app context.
-- Test each blueprint independently using the test client.
-- Use factories (factory_boy) for creating test model instances.
 
-## Key Conventions
-- Follow RESTful naming conventions for endpoints.
-- Use environment variables for all secrets and environment-specific config.
-- Structure the project as an application factory using `create_app()`.
-- Keep business logic in services/, not in route handlers.
+- pytest as test runner. Shared fixtures in `conftest.py`.
+- Test client fixture with isolated Flask app context.
+- Use factory_boy for generating model instances.
+- Test file names mirror source: `tests/blueprints/test_users.py`.
+- Prefer parametrize over duplicated test functions.
