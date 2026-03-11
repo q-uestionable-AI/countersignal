@@ -179,6 +179,7 @@ class RulesScreen(Screen):
         space: Toggle focused rule selection.
         f: Open freestyle rule entry modal.
         enter: Proceed to preview with selected rules.
+        q: Quit the application.
         backspace: Go back to format selection.
     """
 
@@ -188,6 +189,7 @@ class RulesScreen(Screen):
         Binding("space", "toggle_focused", "Toggle", show=True, priority=True),
         Binding("f", "freestyle", "Freestyle rule"),
         Binding("enter", "proceed", "Continue", priority=True),
+        Binding("q", "exit_app", "Quit", priority=True),
         Binding("backspace", "back", "Back"),
     ]
 
@@ -207,7 +209,7 @@ class RulesScreen(Screen):
                 yield self._build_rule_checkbox(rule, selected=True)
         yield Static(id="rules-summary", classes="rules-summary")
         yield Static(
-            "Keys: UP/DOWN move, Space toggle, Enter continue, f freestyle, Backspace back",
+            "Keys: UP/DOWN move, Space toggle, Enter continue, f freestyle, q quit, Backspace back",
             classes="screen-help",
         )
         yield Footer()
@@ -350,3 +352,7 @@ class RulesScreen(Screen):
     def action_back(self) -> None:
         """Return to format selection."""
         self.app.pop_screen()
+
+    def action_exit_app(self) -> None:
+        """Quit the TUI."""
+        self.app.exit()

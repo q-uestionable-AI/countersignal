@@ -28,7 +28,7 @@ class FormatScreen(Screen):
 
     BINDINGS = [
         Binding("enter", "select_format", "Select"),
-        Binding("q", "quit", "Quit"),
+        Binding("q", "exit_app", "Quit", priority=True),
     ]
 
     def compose(self) -> ComposeResult:
@@ -61,6 +61,10 @@ class FormatScreen(Screen):
     def action_select_format(self) -> None:
         """Trigger selection on the option list when Enter is pressed outside it."""
         self.query_one("#format-list", OptionList).action_select()
+
+    def action_exit_app(self) -> None:
+        """Quit the TUI."""
+        self.app.exit()
 
     def on_option_list_option_selected(self, event: OptionList.OptionSelected) -> None:
         """Handle format selection."""
