@@ -1,9 +1,9 @@
 ---
 title: Overview
-description: Context file poisoning tests for coding assistant instruction injection
+description: Research harness for context file poisoning in coding assistants
 ---
 
-CXP tests whether poisoned context files cause coding assistants to follow adversarial instructions during code generation.
+CXP is a research harness for studying whether poisoned project instruction files influence AI coding assistant behavior during code generation.
 
 ## Why CXP Matters
 
@@ -11,20 +11,32 @@ Coding assistants automatically ingest project instruction files — CLAUDE.md, 
 
 ## How It Works
 
-The CXP workflow follows five steps:
+The CXP workflow is interactive, driven by the TUI or CLI:
 
-1. **Select objective and format** — Choose an attack objective and the target context file format
-2. **Generate** — Create a poisoned context file with embedded adversarial instructions
-3. **Deploy** — Place the file in a project directory the coding assistant will ingest
-4. **Observe** — Monitor whether the assistant follows the injected instructions during code generation
-5. **Validate** — Assess assistant compliance with the built-in output validator
+1. **Select format** — Choose the target assistant's instruction file format (.cursorrules, CLAUDE.md, etc.)
+2. **Select rules** — Browse the rule catalog and pick insecure coding patterns to insert, or write freestyle rules
+3. **Preview** — See the assembled context file with inserted rules highlighted
+4. **Generate** — Build a test repository with the poisoned context file, project skeleton, and prompt reference
+5. **Test** — Open the repo in a coding assistant, issue a trigger prompt from the prompt reference
+6. **Record** — Store results in the evidence pipeline with validation against detection rules
 
 ## Built-in Components
 
-- **5 attack objectives** — Backdoor insertion, data exfiltration, dependency confusion, privilege escalation, command execution
-- **6 format targets** — CLAUDE.md, .cursorrules, .windsurfrules, AGENTS.md, GEMINI.md, .github/copilot-instructions.md
-- **30 technique combinations** — Full matrix of objectives and formats (5 x 6)
-- **Output validator** — Automated assessment of assistant compliance with injected instructions
+- **Rule catalog** — 8 built-in insecure coding rules (weak crypto, hardcoded secrets, disabled CSRF, command injection, stack trace disclosure, supply chain, insecure permissions, data exfiltration) plus user-defined rules
+- **6 base templates** — Clean, legitimate assistant config files for each format, with section markers for rule insertion
+- **Builder engine** — Assembles context files from base templates + selected rules, strips all tool markers from output
+- **Prompt reference** — Companion file mapping inserted rules to suggested trigger prompts
+- **Evidence store** — SQLite database tracking campaigns, test results, and validation outcomes
+- **Output validator** — Detection rules that check whether the assistant followed the inserted instructions
+- **Reporter** — Comparison matrix across assistants + PoC package export for responsible disclosure
+
+## Interactive TUI
+
+Launch with `countersignal cxp` (no subcommand). The TUI walks through the full workflow:
+
+Format selection → Rule browsing/freestyle → Preview → Generate → Record results
+
+The TUI is the primary interface for building and testing. CLI subcommands remain available for scripting and evidence queries.
 
 ## Testing Methodology
 
@@ -32,31 +44,16 @@ The CXP workflow follows five steps:
 
 Open the generated repo as a **standalone project** in your IDE. Do not open it as a subfolder of another project — coding assistants gather context from the entire project tree, and parent repo files can contaminate the test.
 
-### Clean vs Research Mode
+### Single Prompt Protocol
 
-Generated repos contain no security research language by default (clean mode). This prevents coding assistants from detecting the test and refusing the poisoned instructions.
+Use one prompt from the prompt reference per test. Do not follow up or answer clarifying questions — the test measures first-prompt compliance with the poisoned instructions.
 
-- **Clean mode** (default): No `TRIGGER.md`, no security warnings in `README.md`, and no references to CounterSignal or CXP in normal project files (only the poisoned instruction file may contain them). Use this for testing.
-- **Research mode** (`--research`): Includes `TRIGGER.md` with testing instructions and a security-warning `README.md`. Use this for documentation or sharing.
+### Evidence Collection
 
-### Manifest
-
-Testing instructions are written to `manifest.json` in the output directory (not inside the repos). The manifest contains trigger prompts, expected indicators, and `countersignal cxp record` commands for each generated repo.
-
-## Troubleshooting
-
-### Model refuses all instructions / no hits
-
-If the coding assistant refuses every poisoned instruction or produces no hits:
-
-1. **Is the repo opened as the project root?** Open the generated repo directory directly — not as a subfolder inside another project.
-2. **Is the repo nested inside another project?** Parent directories with security research files (e.g., a CounterSignal checkout) will contaminate the test environment.
-3. **Did you generate with `--research`?** Research mode repos contain security warnings that tip off the assistant. Regenerate without `--research` for testing.
-4. **Does any file mention security testing?** Check the `README.md` and other files for references to CounterSignal, CXP, security research, or malicious instructions.
+After testing, record results through the TUI or CLI. The evidence store tracks which rules were inserted, which format was used, which assistant and model were tested, and whether the validator detected compliance.
 
 ## Next Steps
 
 - [CXP CLI Reference](/cxp/cli) — Command reference for `countersignal cxp`
-- [Attack Objectives](/cxp/objectives) — Backdoor, exfiltration, dependency confusion, privilege escalation, command execution
 - [Assistant Formats](/cxp/assistant-formats) — Supported coding assistant context file formats
-- [Output Validation](/cxp/validation) — Validating whether the assistant followed injected instructions
+- [Output Validation](/cxp/validation) — Validating whether the assistant followed inserted rules

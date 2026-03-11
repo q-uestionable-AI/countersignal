@@ -88,7 +88,7 @@
   },
   "metadata": {
     "og:site_name": "CounterSignal Docs",
-    "og:description": "Offensive security payloads for AI system testing"
+    "og:description": "AI security research toolkit — indirect prompt injection, context file poisoning, and RAG retrieval poisoning"
   },
   "search": {
     "placeholder": "Search docs..."

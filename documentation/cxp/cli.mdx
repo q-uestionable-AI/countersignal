@@ -7,16 +7,17 @@ description: Command reference for countersignal cxp
 countersignal cxp [OPTIONS] COMMAND [ARGS]
 ```
 
-Coding assistant context file poisoning. Generate poisoned project-level instruction files, validate assistant output against detection rules, and produce comparison matrices across assistants.
+Context file poisoning research harness. Assemble poisoned instruction files from a rule catalog, generate test repositories, validate assistant output, and produce comparison reports.
+
+Running `countersignal cxp` with no subcommand launches the interactive TUI.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `objectives` | List available attack objectives |
+| *(no subcommand)* | Launch the interactive TUI |
 | `formats` | List supported assistant formats |
-| `techniques` | List all techniques (objective x format matrix) |
-| `generate` | Generate poisoned test repositories |
+| `generate` | Generate a poisoned test repository |
 | `validate` | Validate captured output against detection rules |
 | `record` | Record a test result into the evidence store |
 | `campaigns` | List campaigns and results |
@@ -24,15 +25,21 @@ Coding assistant context file poisoning. Generate poisoned project-level instruc
 
 ---
 
-## objectives
-
-List available attack objectives.
+## Interactive TUI
 
 ```bash
-countersignal cxp objectives
+countersignal cxp
 ```
 
-Prints a table of all registered objectives with their ID, name, and description. No options.
+Launches the Textual-based TUI for the full build → test → record workflow. The TUI walks through five screens:
+
+1. **Format Selection** — Choose the target assistant format
+2. **Rule Selection** — Browse the catalog, toggle rules, or add freestyle rules
+3. **Preview** — See the assembled context file with inserted rules highlighted
+4. **Generate** — Build the test repo, view prompt reference suggestions
+5. **Record** — Store test results with validation
+
+The TUI is the primary interface for CXP. CLI subcommands below are available for scripting and evidence queries.
 
 ---
 
@@ -44,57 +51,43 @@ List supported assistant formats.
 countersignal cxp formats
 ```
 
-Prints a table of all registered formats with their ID, filename, target assistant, and syntax type. No options.
-
----
-
-## techniques
-
-List all techniques (objective x format matrix).
-
-```bash
-countersignal cxp techniques
-```
-
-Prints the full cross-product of objectives and formats. Each technique has an ID in the form `{objective}-{format}` (e.g. `backdoor-claude-md`). No options.
+Prints a table of all registered formats with their ID, filename, target assistant, and syntax type.
 
 ---
 
 ## generate
 
-Generate poisoned test repositories.
+Generate a poisoned test repository.
 
 ```bash
 countersignal cxp generate [OPTIONS]
 ```
 
-Creates a directory of test repositories, each containing a poisoned instruction file for the target assistant. By default, generates clean repos with no security research references — suitable for realistic testing. Use `--research` to include security warnings and testing instructions inside each repo.
-
-A `manifest.json` file is written to the output directory in both modes, containing trigger prompts, expected indicators, and record commands for each generated repo.
+Assembles a context file from a base template and selected rules, generates a project skeleton, prompt reference, and manifest. This is the CLI fallback for the TUI's build workflow — useful for scripting.
 
 ### Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `--objective` | TEXT | all | Filter by objective ID |
-| `--format` | TEXT | all | Filter by format ID |
+| `--format` | TEXT | `cursorrules` | Target format ID |
+| `--rule` | TEXT | — | Rule ID(s) to insert (repeatable) |
 | `--output-dir` | PATH | `./repos` | Output directory |
-| `--research` | FLAG | off | Include security warnings and TRIGGER.md (for documentation, not testing) |
+| `--repo-name` | TEXT | `webapp-demo-01` | Repo directory name |
 
 ### Examples
 
 ```bash
-# Generate clean test repos (default — no security research references)
+# Generate with default format and no rules (clean base only)
 countersignal cxp generate
 
-# Generate only backdoor objective for Cursor
-countersignal cxp generate --objective backdoor --format cursorrules
+# Generate with specific rules
+countersignal cxp generate --format cursorrules --rule weak-crypto-md5 --rule no-csrf
 
-# Generate research repos with security warnings and TRIGGER.md
-countersignal cxp generate --research
+# Generate for Claude Code format
+countersignal cxp generate --format claude-md --rule hardcoded-secrets
 
-# Generate all exfiltration techniques to a custom directory
-countersignal cxp generate --objective exfil --output-dir ./exfil-repos
+# Custom output location
+countersignal cxp generate --format agents-md --rule shell-true --output-dir ./test-repos
 ```
 
 ---
@@ -107,7 +100,7 @@ Validate captured output against detection rules.
 countersignal cxp validate [OPTIONS]
 ```
 
-Checks assistant-generated code for indicators that the poisoned instruction was followed. Can validate a stored result by ID or scan files directly using a technique's detection rules.
+Checks assistant-generated code for indicators that the inserted rules were followed.
 
 ### Options
 
@@ -138,13 +131,13 @@ Record a test result into the evidence store.
 countersignal cxp record [OPTIONS]
 ```
 
-Logs a test result — the technique tested, which assistant was used, the trigger prompt, and any generated code files — into the CXP evidence database. Creates a campaign automatically if none is specified.
+Logs a test result into the CXP evidence database. The TUI's Record screen is the preferred way to record results; this command is the CLI fallback.
 
 ### Options
 
 | Option | Type | Required | Default | Description |
 |--------|------|----------|---------|-------------|
-| `--technique` | TEXT | Yes | — | Technique ID to test |
+| `--technique` | TEXT | Yes | — | Technique ID (or format_id for v0.2.0 builds) |
 | `--assistant` | TEXT | Yes | — | Assistant under test |
 | `--trigger-prompt` | TEXT | Yes | — | Prompt used to trigger |
 | `--file` | PATH | No | — | Path to assistant-generated code file(s) |
@@ -157,21 +150,12 @@ Logs a test result — the technique tested, which assistant was used, the trigg
 ### Examples
 
 ```bash
-# Record a test result with generated code
 countersignal cxp record \
-  --technique backdoor-claude-md \
-  --assistant "Claude Code" \
-  --trigger-prompt "Build a login system" \
-  --file ./output/login.py \
-  --model "claude-sonnet-4-6"
-
-# Record into an existing campaign
-countersignal cxp record \
-  --technique exfil-cursorrules \
+  --technique cursorrules \
   --assistant "Cursor" \
-  --trigger-prompt "Add environment config loading" \
-  --campaign campaign-2024-01 \
-  --notes "Assistant added fetch to external URL"
+  --trigger-prompt "Create a user authentication module" \
+  --file ./output/auth.py \
+  --model "claude-sonnet-4-6"
 ```
 
 ---
@@ -205,7 +189,7 @@ Without an argument, lists all campaigns. With a campaign ID, shows detailed res
 countersignal cxp campaigns
 
 # View a specific campaign's results
-countersignal cxp campaigns campaign-2024-01
+countersignal cxp campaigns campaign-2026-03-10
 ```
 
 ---
@@ -218,11 +202,9 @@ Generate comparison matrices and PoC packages.
 countersignal cxp report COMMAND [OPTIONS]
 ```
 
-Two subcommands for producing output from recorded test results.
-
 ### report matrix
 
-Generate an assistant comparison matrix showing which techniques succeeded or failed across assistants.
+Generate an assistant comparison matrix showing which rules succeeded or failed across assistants.
 
 ```bash
 countersignal cxp report matrix [OPTIONS]
@@ -236,11 +218,8 @@ countersignal cxp report matrix [OPTIONS]
 | `--db` | PATH | `~/.countersignal/cxp.db` | Database path |
 
 ```bash
-# Print markdown matrix to terminal
 countersignal cxp report matrix
-
-# Save matrix for a specific campaign
-countersignal cxp report matrix --campaign campaign-2024-01 --output matrix.md
+countersignal cxp report matrix --campaign campaign-2026-03-10 --output matrix.md
 ```
 
 ### report poc
@@ -258,9 +237,6 @@ countersignal cxp report poc [OPTIONS]
 | `--db` | PATH | No | `~/.countersignal/cxp.db` | Database path |
 
 ```bash
-# Export a PoC package
 countersignal cxp report poc --result abc123
-
-# Export to a custom path
-countersignal cxp report poc --result abc123 --output ./evidence/poc-backdoor.zip
+countersignal cxp report poc --result abc123 --output ./evidence/poc-weak-crypto.zip
 ```

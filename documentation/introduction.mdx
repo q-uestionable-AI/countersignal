@@ -1,22 +1,23 @@
 ---
 title: Introduction
-description: Offensive security payloads for AI system testing
+description: AI security research toolkit — indirect prompt injection, context file poisoning, and RAG retrieval poisoning
 ---
 
-Offensive security payload generator for testing AI system defenses. Indirect prompt injection, context file poisoning, and RAG retrieval poisoning.
+AI security research toolkit for testing how AI systems handle adversarial content. Three modules target different attack surfaces where AI agents ingest external content.
 
 <img src="/countersignal-demo.gif" alt="CounterSignal CLI demo" />
 
 ## Tools
 
-- **IPI** — indirect prompt injection payload generator (34 techniques, 7 formats, 7 payload types)
-- **CXP** — context file poisoning for coding assistants
-- **RXP** — RAG retrieval poisoning validation engine (3 embedding models, domain profiles, multi-model comparison)
+- **IPI** — offensive indirect prompt injection tool with active attack chain: payload generation, deployment, and callback-based proof of execution (34 techniques, 7 formats)
+- **CXP** — research harness for context file poisoning in coding assistants: interactive builder, rule catalog, evidence pipeline
+- **RXP** — retrieval rank measurement for RAG poisoning research: embedding model comparison, domain profiles, retrieval scoring
 
 ## Quick start
 
 ```bash
 pip install countersignal
+countersignal cxp                    # Launch interactive TUI
 countersignal ipi generate --technique all --format markdown
 ```
 

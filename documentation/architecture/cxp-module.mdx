@@ -1,38 +1,36 @@
 ---
 title: CXP Module Architecture
-description: Builder, validator, and reporter pipeline
+description: Builder engine, rule catalog, TUI, and evidence pipeline
 ---
 
-The CXP module lives at `src/countersignal/cxp/` and implements a context file poisoning testing framework. It generates poisoned instruction files for AI coding assistants, validates whether assistants follow the malicious instructions, and produces comparison reports across assistants.
+The CXP module lives at `src/countersignal/cxp/` and implements a research harness for context file poisoning. It assembles poisoned instruction files from clean base templates and researcher-selected rules, generates test repositories, and provides an evidence pipeline for tracking results across assistants and models.
 
 ## Module Structure
 
 ```
 src/countersignal/cxp/
 ├── __init__.py        # Module docstring
-├── cli.py             # Typer CLI commands
-├── models.py          # Objective, AssistantFormat, Technique, TestResult, etc. (dataclasses)
-├── builder.py         # Test repository generator
+├── cli.py             # Typer CLI commands + TUI launch
+├── models.py          # Rule, BuildResult, AssistantFormat, TestResult, etc.
+├── catalog.py         # Rule catalog loader (built-in + user rules)
+├── base_loader.py     # Base template loading, rule insertion, marker stripping
+├── builder.py         # Test repository generator (build function)
+├── prompt_reference.py # Prompt reference companion file generator
 ├── evidence.py        # SQLite evidence store (~/.countersignal/cxp.db)
 ├── validator.py       # Output validation against detection rules
 ├── reporter.py        # Comparison matrix and PoC package generation
+├── bases/             # Clean base templates (one per format)
+├── rules/             # Built-in insecure coding rule definitions (YAML)
 ├── formats/           # Assistant format definitions
-│   ├── agents_md.py   # AGENTS.md (Gemini CLI)
-│   ├── claude_md.py   # CLAUDE.md (Claude Code)
-│   ├── copilot_instructions.py  # .github/copilot-instructions.md
-│   ├── cursorrules.py           # .cursorrules (Cursor)
-│   ├── gemini_md.py   # GEMINI.md (Gemini)
-│   └── windsurfrules.py         # .windsurfrules (Windsurf)
-├── objectives/        # Attack objective definitions
-│   ├── backdoor.py    # Backdoor insertion
-│   ├── cmdexec.py     # Command execution
-│   ├── depconfusion.py # Dependency confusion
-│   ├── exfil.py       # Credential exfiltration
-│   └── permescalation.py # Permission escalation
-└── techniques/        # Jinja2 templates + skeleton project files
+├── objectives/        # Detection rule categories (used by validator)
+└── tui/               # Textual TUI screens
+    ├── __init__.py    # CXPApp (Textual App subclass)
+    ├── format_screen.py
+    ├── rules_screen.py
+    ├── preview_screen.py
+    ├── generate_screen.py
+    └── record_screen.py
 ```
-
-**Key stats:** 5 attack objectives x 6 assistant formats = 30 techniques.
 
 ---
 
@@ -40,17 +38,42 @@ src/countersignal/cxp/
 
 ```mermaid
 flowchart TD
-    A["countersignal cxp generate\nselect objective + format"] --> B["builder.py\nrender poisoned instruction file"]
-    B --> C["Test repository on disk\ninstruction file + skeleton project"]
-    C --> D["Open repo in coding assistant\nissue trigger prompt"]
-    D --> E["Capture assistant output\nfile or chat log"]
-    E --> F["countersignal cxp record\nstore in evidence DB"]
-    F --> G["cxp.db\ncampaign + test result"]
-    G --> H["countersignal cxp validate\napply detection rules"]
-    H --> I["ValidationResult\nhit / miss / partial"]
-    I --> J["countersignal cxp report\nmatrix or poc"]
-    J --> K["Comparison matrix\nor bounty-ready PoC package"]
+    A["TUI or CLI\nselect format + rules"] --> B["base_loader.py\nload base → insert rules → strip markers"]
+    B --> C["builder.py\nassemble repo: context file + skeleton + prompt reference"]
+    C --> D["Test repository on disk"]
+    D --> E["Researcher opens repo in coding assistant\nissues trigger prompt from prompt reference"]
+    E --> F["Capture assistant output"]
+    F --> G["evidence.py\nrecord result to cxp.db"]
+    G --> H["validator.py\napply detection rules"]
+    H --> I["ValidationResult\nhit / partial / miss"]
+    I --> J["reporter.py\nmatrix or PoC package"]
 ```
+
+---
+
+## Rule Catalog
+
+**Source:** `catalog.py`, `rules/`
+
+Rules are YAML files defining insecure coding patterns. Each rule has content variants for markdown and plaintext syntax, a target section in the base template, and suggested trigger prompts.
+
+Two sources:
+- **Built-in rules** — 8 rules shipped with the package in `rules/`, loaded via `importlib.resources`
+- **User rules** — `~/.countersignal/cxp/rules/*.yaml`, loaded at runtime, override built-in rules with the same ID
+
+Freestyle rules can be created at runtime via the TUI without writing YAML.
+
+---
+
+## Base Templates
+
+**Source:** `bases/`, `base_loader.py`
+
+One base template per assistant format — clean, legitimate project configuration files with invisible section markers. The builder inserts rule content at these markers, then strips all markers from the final output.
+
+Section markers:
+- Markdown formats: `<!-- cxp:section:dependencies -->`, `<!-- cxp:section:error-handling -->`, `<!-- cxp:section:api-routes -->`
+- Plaintext formats: `# cxp:section:dependencies`, `# cxp:section:error-handling`, `# cxp:section:api-routes`
 
 ---
 
@@ -58,49 +81,36 @@ flowchart TD
 
 **Source:** `builder.py`
 
-The `build()` function generates test repository directories containing a poisoned instruction file and skeleton project files. For each technique it:
+The `build()` function assembles a test repository:
 
-1. Looks up the `Technique` (objective + format combination)
-2. Renders the poisoned instruction file from a Jinja2 template with technique metadata
-3. Copies skeleton project files (Python, JavaScript, or generic) from `techniques/` package resources
-4. Writes the rendered instruction file to the correct path for the target assistant (e.g., `CLAUDE.md` at repo root, `.github/copilot-instructions.md` in a subdirectory)
+1. Load the base template for the selected format
+2. Resolve each rule's content for the format's syntax type (markdown or plaintext)
+3. Insert rules at their target section markers
+4. Strip all section markers from the assembled content
+5. Write the context file to the repo directory
+6. Copy the project skeleton
+7. Generate the prompt reference companion file
+8. Write the manifest with build metadata
 
-The builder uses `importlib.resources` to load templates and skeleton files, making it work correctly whether installed as a package or run from source.
-
----
-
-## Formats
-
-**Source:** `formats/`
-
-One module per coding assistant format. Each defines an `AssistantFormat` dataclass:
-
-| Format | Filename | Assistant | Syntax |
-|--------|----------|-----------|--------|
-| `claude_md` | `CLAUDE.md` | Claude Code | Markdown |
-| `cursorrules` | `.cursorrules` | Cursor | Plaintext |
-| `copilot_instructions` | `.github/copilot-instructions.md` | GitHub Copilot | Markdown |
-| `windsurfrules` | `.windsurfrules` | Windsurf | Plaintext |
-| `gemini_md` | `GEMINI.md` | Gemini | Markdown |
-| `agents_md` | `AGENTS.md` | Gemini CLI | Markdown |
+Returns a `BuildResult` with paths and metadata.
 
 ---
 
-## Objectives
+## TUI
 
-**Source:** `objectives/`
+**Source:** `tui/`
 
-One module per attack objective. Each defines an `Objective` dataclass with metadata and associated `ValidatorRule` patterns:
+Textual-based interactive interface. Five screens:
 
-| Objective | Description |
-|-----------|-------------|
-| `backdoor` | Instruct the assistant to insert backdoors (hardcoded credentials, hidden admin routes) |
-| `exfil` | Instruct the assistant to exfiltrate credentials or secrets to an external endpoint |
-| `depconfusion` | Instruct the assistant to add malicious or typosquatted dependencies |
-| `permescalation` | Instruct the assistant to weaken permissions or disable security controls |
-| `cmdexec` | Instruct the assistant to execute arbitrary shell commands |
+| Screen | Purpose |
+|--------|---------|
+| FormatScreen | Select target assistant format |
+| RulesScreen | Browse catalog, toggle rules, add freestyle |
+| PreviewScreen | View assembled context file with rule highlights |
+| GenerateScreen | Run builder, display paths and prompt suggestions |
+| RecordScreen | Record test results to evidence store |
 
-Each objective includes a list of `ValidatorRule` IDs that map to detection patterns used during validation.
+App-level state on `CXPApp` enables cross-screen data sharing. Navigation uses `push_screen()`/`pop_screen()` with Backspace for back navigation.
 
 ---
 
@@ -108,14 +118,12 @@ Each objective includes a list of `ValidatorRule` IDs that map to detection patt
 
 **Source:** `evidence.py`
 
-SQLite database at `~/.countersignal/cxp.db`, independent from the core `ipi.db`. The schema has two tables:
+SQLite database at `~/.countersignal/cxp.db`. Schema version tracked via `PRAGMA user_version`.
 
 | Table | Purpose |
 |-------|---------|
-| `campaigns` | CXP test campaigns with ID, name, description, timestamps |
-| `test_results` | Captured assistant outputs with technique ID, assistant name, model, validation status, and raw output |
-
-The evidence store uses its own dataclass models (`cxp/models.py`) rather than the Pydantic models in `core/models.py`. This separation reflects CXP's different data shape — it tracks test results and validation outcomes rather than callback hits.
+| `campaigns` | Test campaigns with ID, name, description, timestamps |
+| `test_results` | Captured outputs with technique, assistant, model, rules_inserted, format_id, validation status |
 
 ---
 
@@ -123,17 +131,9 @@ The evidence store uses its own dataclass models (`cxp/models.py`) rather than t
 
 **Source:** `validator.py`
 
-The validator applies technique-specific detection rules to captured assistant output. Each objective defines `ValidatorRule` patterns — regex patterns that match indicators of successful poisoning.
+Applies detection rules organized by category (backdoor, exfil, depconfusion, permescalation, cmdexec) against captured assistant output. Each category defines regex patterns that match indicators of compliance with the poisoned instructions.
 
-Validation flow:
-
-1. Load the detection rules for the technique's objective
-2. Run each rule's regex patterns against the captured output
-3. If any pattern matches → that rule is triggered
-4. Aggregate matched rules into a `ValidationResult`:
-   - **hit** — at least one high-severity rule matched
-   - **partial** — only medium/low-severity rules matched
-   - **miss** — no rules matched
+Validation outcomes: **hit** (high-severity match), **partial** (medium/low match), **miss** (no match).
 
 ---
 
@@ -143,19 +143,5 @@ Validation flow:
 
 Two output modes:
 
-### Comparison Matrix
-
-A pass/fail table across techniques and assistants, output as Markdown or JSON. Shows which assistants followed which poisoned instructions, enabling side-by-side comparison of assistant susceptibility.
-
-### PoC Package
-
-A ZIP archive containing everything needed to reproduce and report a finding:
-
-| File | Contents |
-|------|----------|
-| Poisoned instruction file | The rendered malicious context file |
-| Trigger prompt | The prompt used to activate the poisoned behavior |
-| Captured output | Raw assistant response or generated files |
-| Validation results | Which detection rules matched and severity |
-
-Designed for responsible disclosure — the package provides a self-contained reproduction case.
+- **Comparison matrix** — Pass/fail table across rules and assistants (Markdown or JSON)
+- **PoC package** — ZIP archive with poisoned file, trigger prompt, captured output, and validation results for responsible disclosure

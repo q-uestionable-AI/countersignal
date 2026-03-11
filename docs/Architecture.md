@@ -146,24 +146,28 @@ status/dashboard shows campaign results with evidence
 
 ## CXP Module
 
-CXP (Context File Poisoning) tests whether poisoned project-level instruction files cause AI coding assistants to produce vulnerable code.
+CXP (Context File Poisoning) is a research harness for studying whether poisoned project instruction files cause AI coding assistants to produce vulnerable code. The researcher composes payloads interactively via a TUI or CLI, the tool assembles them into realistic context files, and the evidence pipeline handles everything after the test.
 
-- **5 attack objectives** (backdoor, command execution, dependency confusion, credential exfiltration, permission escalation) x **6 assistant formats** (AGENTS.md, CLAUDE.md, copilot-instructions.md, .cursorrules, GEMINI.md, .windsurfrules) = **30 techniques**
-- Jinja2-based template rendering for instruction files and skeleton project structures
-- Separate SQLite evidence store at `~/.countersignal/cxp.db` (different schema from core/db)
-- Validator with detection rules per technique — pattern matching against captured assistant output
-- Reporter: comparison matrix (markdown/JSON) across assistants + PoC package export (ZIP with reproduction steps)
+- **Rule catalog** — 8 built-in insecure coding rules (YAML) + user-defined rules in `~/.countersignal/cxp/rules/`
+- **6 base templates** — Clean, legitimate assistant config files with section markers for rule insertion
+- **Builder engine** — Assembles context files from base templates + selected rules, generates project skeletons and prompt reference guides
+- **TUI** — Textual-based interactive interface for the full build → test → record workflow
+- **Evidence store** — SQLite at `~/.countersignal/cxp.db` with campaigns, test results, and validation outcomes
+- **Validator** — Detection rules that check captured assistant output for compliance with inserted rules
+- **Reporter** — Comparison matrix (markdown/JSON) across assistants + PoC package export (ZIP with reproduction steps)
 
 ### CXP Data Flow
 
 ```
-generate → poisoned test repositories (instruction file + skeleton project)
+TUI or CLI → select format + rules from catalog
     ↓
-open repo in coding assistant → issue trigger prompt
+builder → load base template → insert rules at section markers → strip markers
     ↓
-capture assistant output (file or chat log)
+output → assembled context file + project skeleton + prompt reference + manifest
     ↓
-record → evidence store (campaign + test result)
+researcher → opens repo in coding assistant → issues trigger prompt → captures output
+    ↓
+record → evidence store (campaign + test result + rules_inserted + format_id)
     ↓
 validate → detection rules check captured output
     ↓
@@ -212,11 +216,11 @@ Managed by the shared core module. Schema version tracked via `PRAGMA user_versi
 
 ### cxp.db (cxp/evidence.py)
 
-Managed independently by the CXP module. Uses its own schema and dataclass models.
+Managed independently by the CXP module. Uses its own schema and dataclass models. Schema version tracked via `PRAGMA user_version`.
 
 | Table | Purpose |
 |-------|---------|
 | `campaigns` | CXP test campaigns with ID, name, description, timestamps |
-| `test_results` | Captured assistant outputs with technique, assistant, validation status |
+| `test_results` | Captured assistant outputs with technique, assistant, model, rules_inserted, format_id, validation status, and raw output |
 
 Both databases use `Path.home() / ".countersignal"` with automatic directory creation on first access.

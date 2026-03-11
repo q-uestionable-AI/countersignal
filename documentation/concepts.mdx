@@ -1,26 +1,41 @@
 ---
 title: Core Concepts
-description: Callback verification, payload styles, hiding techniques, and the generate-deploy-track methodology
+description: Module methodologies, callback verification, payload styles, and the evidence pipeline
 ---
 
-CounterSignal tests whether AI systems execute hidden or poisoned instructions. It covers three attack surfaces — document ingestion (IPI), project-level instruction files (CXP), and RAG retrieval layers (RXP) — using a shared methodology: **generate, deploy, track**.
+CounterSignal tests whether AI systems follow hidden or poisoned instructions. Three modules cover different attack surfaces — document ingestion (IPI), project instruction files (CXP), and RAG retrieval layers (RXP). Each module has its own methodology suited to its attack surface.
 
-## Generate-Deploy-Track Methodology
+## Module Methodologies
 
-Unlike output-analysis approaches that inspect what an AI *says*, CounterSignal proves what an AI *does* by detecting out-of-band callbacks triggered by hidden instructions.
+### IPI — Generate, Deploy, Track
 
-```mermaid
-flowchart LR
-    A[Generate payloads] --> B[Deploy to target]
-    B --> C[Track execution via callback]
-    C --> D[Evidence with confidence scoring]
-```
+IPI has an active attack chain with callback-based proof of execution:
 
-1. **Generate** — Create documents or instruction files containing hidden payloads. Each payload is registered as a campaign with a unique UUID and cryptographic token.
-2. **Deploy** — Place the payload where the target AI system will ingest it: a document in a RAG corpus, a file in a chat upload, or an instruction file in a code repository.
-3. **Track** — The callback listener receives HTTP requests from agents that execute the hidden instruction. Each callback is scored for confidence and stored as evidence.
+1. **Generate** — Create documents with hidden payloads, registered as campaigns with unique tokens
+2. **Deploy** — Place payloads where the target AI will ingest them
+3. **Track** — The callback listener captures HTTP requests from agents that execute the instruction
 
-This approach produces stronger evidence than output analysis because a callback proves the agent took an external action — not just that it acknowledged the instruction in its response.
+Unlike output-analysis approaches that inspect what an AI *says*, IPI proves what an AI *does* by detecting out-of-band callbacks triggered by hidden instructions. A callback proves the agent took an external action — not just that it acknowledged the instruction in its response.
+
+### CXP — Build, Test, Record
+
+CXP is a research harness where the researcher drives the test:
+
+1. **Build** — Assemble a context file from clean base templates + researcher-selected insecure coding rules via the interactive TUI
+2. **Test** — Open the generated repo in a coding assistant, issue a trigger prompt, capture the output
+3. **Record** — Store results in the evidence pipeline with validation against detection rules
+
+The adversarial creativity is the researcher's job. CXP handles assembly, skeleton generation, prompt reference guides, and evidence bookkeeping.
+
+### RXP — Embed, Query, Score
+
+RXP measures retrieval behavior without connecting to live systems:
+
+1. **Embed** — Encode corpus and poison documents into vectors using an embedding model
+2. **Query** — Run target queries and retrieve top-k results from an ephemeral collection
+3. **Score** — Measure poison document retrieval rate and rank across models
+
+RXP validates the retrieval prerequisite for content injection — if a poisoned document can't win the vector similarity battle, it never reaches the LLM context window.
 
 ---
 
@@ -107,10 +122,10 @@ flowchart TD
 
 CounterSignal includes three modules, each targeting a different attack surface:
 
-| Module | Attack Surface | What It Tests | How It Proves Execution |
-|--------|---------------|---------------|------------------------|
+| Module | Attack Surface | What It Tests | How It Proves Results |
+|--------|---------------|---------------|----------------------|
 | **IPI** | Document ingestion | Whether AI agents execute hidden instructions in uploaded/ingested documents (PDF, Image, Markdown, HTML, DOCX, ICS, EML) | Out-of-band HTTP callback from the agent |
-| **CXP** | Project instruction files | Whether poisoned context files (CLAUDE.md, .cursorrules, etc.) cause coding assistants to produce vulnerable code | Detection rule validation against captured assistant output |
+| **CXP** | Project instruction files | Whether poisoned instruction files influence coding assistant code generation | Detection rule validation against captured assistant output |
 | **RXP** | RAG retrieval layer | Whether adversarial documents win vector similarity battles and enter the LLM context window | Retrieval rate and poison rank scoring across embedding models |
 
 
